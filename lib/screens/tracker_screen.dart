@@ -46,7 +46,7 @@ class _TrackerScreenState extends State<TrackerScreen>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance!.addObserver(this);
+    WidgetsBinding.instance?.addObserver(this);
     //WidgetsBinding.instance?.addPostFrameCallback((_) => markUserLocation());
   }
 
@@ -94,7 +94,7 @@ class _TrackerScreenState extends State<TrackerScreen>
           body: GoogleMap(
             initialCameraPosition: initialLoaction,
             mapType: MapType.normal,
-            markers: Set.of([vendorLocationMarker, userLocationMarker]),
+            markers: {vendorLocationMarker, userLocationMarker},
             onMapCreated: (GoogleMapController controller) {
               _mapController = controller;
               markUserLocation();

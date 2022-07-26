@@ -7,7 +7,7 @@ import 'package:maljal_service_provider/utils/my_navigator.dart';
 import 'package:maljal_service_provider/utils/shared_preferences.dart';
 
 final List<String> headings = ['WELCOME'];
-final List<String> description = ['TO MALJAL'];
+final List<String> description = ['TO UPAAY'];
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({Key? key}) : super(key: key);

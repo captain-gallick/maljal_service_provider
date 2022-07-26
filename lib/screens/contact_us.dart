@@ -111,12 +111,12 @@ class ContactScreen extends StatelessWidget {
                           children: [
                             GestureDetector(
                               onTap: () {
-                                url_launcher.launch("tel://+919997667559");
+                                url_launcher.launch("tel://18003094747");
                               },
                               child: const Align(
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  '+(91) 9997667559',
+                                  '1800 309 4747',
                                   style: TextStyle(
                                       color: AppColors.appTextDarkBlue,
                                       fontSize: 18.0),
@@ -145,13 +145,13 @@ class ContactScreen extends StatelessWidget {
                                 onTap: () {
                                   final Uri params = Uri(
                                       scheme: 'mailto',
-                                      path: 'info@maljal.org');
+                                      path: 'info@upaay.org.in');
 
                                   var url = params.toString();
                                   launch(url);
                                 },
                                 child: const Text(
-                                  'info@maljal.org',
+                                  'info@upaay.org.in',
                                   style: TextStyle(
                                       color: AppColors.appTextDarkBlue,
                                       fontSize: 18.0),
@@ -161,13 +161,13 @@ class ContactScreen extends StatelessWidget {
                                 onTap: () {
                                   final Uri params = Uri(
                                       scheme: 'mailto',
-                                      path: 'help@maljal.org');
+                                      path: 'help@upaay.org.in');
 
                                   var url = params.toString();
                                   launch(url);
                                 },
                                 child: const Text(
-                                  'help@maljal.org',
+                                  'help@upaay.org.in',
                                   style: TextStyle(
                                       color: AppColors.appTextDarkBlue,
                                       fontSize: 18.0),
@@ -182,7 +182,7 @@ class ContactScreen extends StatelessWidget {
                         )),
                   ),
                 ),
-                SizedBox(
+                /* SizedBox(
                   width: 300,
                   child: ListTile(
                       dense: true,
@@ -210,7 +210,7 @@ class ContactScreen extends StatelessWidget {
                         'assets/images/message.png',
                         width: 50,
                       )),
-                ),
+                ), */
               ],
             )
           ],

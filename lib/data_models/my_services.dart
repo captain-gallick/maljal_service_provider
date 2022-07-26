@@ -16,6 +16,7 @@ class MyServices {
   String lng;
   String vendormsg;
   String video;
+  String landmark;
 
   MyServices({
     required this.username,
@@ -35,6 +36,7 @@ class MyServices {
     required this.lng,
     required this.vendormsg,
     required this.video,
+    required this.landmark,
   });
 
   factory MyServices.fromJson(Map<String, dynamic> responseData) {
@@ -56,6 +58,7 @@ class MyServices {
       lat: responseData['lat'],
       lng: responseData['lng'],
       vendormsg: responseData['vendor_msg'],
+      landmark: responseData['landmark'],
     );
   }
 }

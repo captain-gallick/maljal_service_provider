@@ -1,17 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:ui';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:location/location.dart';
 import 'package:maljal_service_provider/constants/app_colors.dart';
 import 'package:maljal_service_provider/constants/app_urls.dart';
 import 'package:maljal_service_provider/data_models/my_services.dart';
 import 'package:maljal_service_provider/my_widgets/app_button.dart';
 import 'package:maljal_service_provider/my_widgets/text_field.dart';
-import 'package:maljal_service_provider/screens/decline_service.dart';
 import 'package:maljal_service_provider/screens/service_feeds.dart';
 import 'package:maljal_service_provider/utils/map_utils.dart';
 import 'package:maljal_service_provider/utils/my_navigator.dart';
@@ -45,12 +45,12 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
   void initState() {
     super.initState();
     WidgetsBinding.instance?.addPostFrameCallback((_) => getLocation());
-    WidgetsBinding.instance!.addObserver(this);
+    WidgetsBinding.instance?.addObserver(this);
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance!.removeObserver(this);
+    WidgetsBinding.instance?.removeObserver(this);
     happyCodeController.dispose();
     locationTimer?.cancel();
     bl.BackgroundLocation.stopLocationService();
@@ -208,6 +208,13 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                                           widget.myServices.city +
                                           ', ' +
                                           widget.myServices.pincode,
+                                      style: const TextStyle(
+                                        fontSize: 16.0,
+                                        color: AppColors.appTextDarkBlue,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Landmark: ' + widget.myServices.landmark,
                                       style: const TextStyle(
                                         fontSize: 16.0,
                                         color: AppColors.appTextDarkBlue,
@@ -393,7 +400,7 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                           const SizedBox(
                             height: 10.0,
                           ),
-                          Visibility(
+                          /* Visibility(
                               visible: showDecline,
                               child: Center(
                                   child: TextButton(
@@ -427,7 +434,7 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                                           id: widget.myServices.id,
                                         ));
                                   }), */
-                              ),
+                              ), */
                         ]),
                   ),
                 ),
@@ -705,42 +712,66 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
         context: buildContext,
         builder: (BuildContext context) {
           dialogContext = context;
-          return Dialog(
-            backgroundColor: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: SizedBox(
-                height: 300.0,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: <Widget>[
-                    const Text(
-                      'Enter Happy code:',
-                      style: TextStyle(color: Colors.black, fontSize: 20.0),
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return Dialog(
+                backgroundColor: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: SizedBox(
+                    height: 300.0,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: <Widget>[
+                        const Text(
+                          'Enter Happy code:',
+                          style: TextStyle(color: Colors.black, fontSize: 20.0),
+                        ),
+                        MyTextField(
+                          type: TextInputType.number,
+                          myController: happyCodeController,
+                        ),
+                        Row(
+                          children: [
+                            Text(fileName),
+                            const Text('Pick'),
+                            TextButton(
+                                onPressed: () {
+                                  imageVideo = 1;
+                                  pickFile(setState);
+                                },
+                                child: const Text('Image')),
+                            const Text('or'),
+                            TextButton(
+                                onPressed: () {
+                                  imageVideo = 2;
+                                  pickFile(setState);
+                                },
+                                child: const Text('Video')),
+                          ],
+                        ),
+                        AppButton(
+                            title: 'SUBMIT',
+                            width: 150.0,
+                            onPressed: () {
+                              NetworkCheckUp().checkConnection().then((value) {
+                                if (value) {
+                                  _finishService();
+                                } else {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(const SnackBar(
+                                    content:
+                                        Text("Please connect to internet."),
+                                  ));
+                                }
+                              });
+                            })
+                      ],
                     ),
-                    MyTextField(
-                      type: TextInputType.number,
-                      myController: happyCodeController,
-                    ),
-                    AppButton(
-                        title: 'SUBMIT',
-                        width: 150.0,
-                        onPressed: () {
-                          NetworkCheckUp().checkConnection().then((value) {
-                            if (value) {
-                              _finishService();
-                            } else {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(const SnackBar(
-                                content: Text("Please connect to internet."),
-                              ));
-                            }
-                          });
-                        })
-                  ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           );
         });
   }
@@ -772,35 +803,41 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
     }
   }
 
+  String fileName = '';
+  File? pickedFile;
+  int imageVideo = -1;
+
   _finishService() async {
     String _code = happyCodeController.text;
     if (_code.isNotEmpty) {
       String token = await SharedPreferencesHelper().getToken();
       if (token != '') {
         showLoader();
-        final Response response = await post(
-          Uri.parse(AppUrl.finish),
-          headers: <String, String>{'token': token},
-          body: jsonEncode(<String, String>{
-            'happy_code': _code,
-            'id': widget.myServices.id
-          }),
-        );
+        var mRequest = MultipartRequest("POST", Uri.parse(AppUrl.finish));
+        mRequest.headers.addAll(<String, String>{"token": token});
 
-        if ((jsonDecode(response.body)['data'] == null)) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Wrong Code'),
-          ));
-          Navigator.pop(dialogContext);
-        } else {
-          //showLoader(2);
+        mRequest.fields['happy_code'] = _code;
+        mRequest.fields['id'] = widget.myServices.id;
+        if (fileName != '') {
+          mRequest.files.add(MultipartFile(
+              'media',
+              File(pickedFile!.path.toString()).readAsBytes().asStream(),
+              File(pickedFile!.path.toString()).lengthSync(),
+              filename: pickedFile!.path.toString().split("/").last));
+        }
+
+        var response = await mRequest.send();
+
+        if (response.statusCode == 200) {
           Timer(const Duration(seconds: 2), () {
             NavigationHelper().navigateTo(context, const ServiceFeedsScreen());
-            /* Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const ServiceFeedsScreen())); */
           });
+        } else {
+          //showLoader(2);
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Error'),
+          ));
+          Navigator.pop(dialogContext);
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -811,6 +848,31 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text("Please enter a valid code."),
       ));
+    }
+  }
+
+  pickFile(v) async {
+    final ImagePicker _picker = ImagePicker();
+    XFile? file;
+
+    if (imageVideo == 1) {
+      file = await _picker.pickImage(source: ImageSource.gallery);
+    } else if (imageVideo == 2) {
+      file = await _picker.pickVideo(source: ImageSource.gallery);
+    }
+
+    if (file != null) {
+      v(() {
+        pickedFile = File(file!.path);
+        log(file.name);
+        if (file.name.length > 10) {
+          fileName = file.name.substring(0, 10);
+        } else {
+          fileName = file.name;
+        }
+      });
+    } else {
+      // User canceled the picker
     }
   }
 

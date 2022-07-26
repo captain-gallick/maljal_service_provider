@@ -1,5 +1,5 @@
 class AppUrl {
-  static String appUrl = 'https://maljal.org/';
+  static String appUrl = 'https://upaay.org.in/';
   static String baseUrl = appUrl + 'vendorapi/';
 
   static String sendOtp = baseUrl + 'authentication/login';
@@ -13,8 +13,8 @@ class AppUrl {
   static String finish = baseUrl + 'booking/finish';
 
   static String updateLocation =
-      "https://maljal.org/vendorapi/booking/updateloc";
-  static String decline = "https://maljal.org/vendorapi/booking/close";
+      "https://upaay.org.in/vendorapi/booking/updateloc";
+  static String decline = "https://upaay.org.in/vendorapi/booking/close";
   static String requestCode =
-      "https://maljal.org/vendorapi/booking/requestcode";
+      "https://upaay.org.in/vendorapi/booking/requestcode";
 }

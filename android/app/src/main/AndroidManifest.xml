@@ -10,7 +10,7 @@
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
-        android:label="Maljal Service Provider">
+        android:label="Upaay Service Provider">
 
         <meta-data android:name="com.google.android.geo.API_KEY"
                android:value="AIzaSyAsuK3dKiwR9RzV1DzG7Hy9Bw5Wx2eptug"/>

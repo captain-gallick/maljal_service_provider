@@ -50,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void showPermissionDialog() async {
     String myText =
-        'Maljal Service Provider collects location data to enable live tracking of the service provider even when the app is closed or not in use.';
+        'Upaay Service Provider collects location data to enable live tracking of the service provider even when the app is closed or not in use.';
 
     showDialog(
         barrierDismissible: false,
@@ -223,6 +223,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             codeLength: 6,
                             onCodeSubmitted: (code) {
                               doLogin();
+                            },
+                            onCodeChanged: (code) {
+                              if (code!.length == 6) {
+                                _otp = code;
+                                doLogin();
+                              }
                             },
                           ),
                           const SizedBox(
