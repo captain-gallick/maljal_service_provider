@@ -40,7 +40,7 @@ class _DeclineServiceScreenState extends State<DeclineServiceScreen> {
                 appBar: AppBar(
                   elevation: 0,
                   backgroundColor: AppColors.appLightBlue,
-                  title: const Text('DECLINE SERVICE',
+                  title: const Text('SEND REMARK',
                       style: TextStyle(color: AppColors.appTextDarkBlue)),
                   centerTitle: true,
                   leading: IconButton(
@@ -60,20 +60,9 @@ class _DeclineServiceScreenState extends State<DeclineServiceScreen> {
                         padding: const EdgeInsets.all(25.0),
                         child: Column(
                           children: [
-                            const SizedBox(
-                              height: 100,
-                            ),
                             const Center(
                               child: Text(
-                                'Please mention,',
-                                style: TextStyle(
-                                    fontSize: 20,
-                                    color: AppColors.appTextDarkBlue),
-                              ),
-                            ),
-                            const Center(
-                              child: Text(
-                                'why you want to decline service?',
+                                'Please add you remark here.',
                                 style: TextStyle(
                                     fontSize: 20,
                                     color: AppColors.appTextDarkBlue),
@@ -131,7 +120,7 @@ class _DeclineServiceScreenState extends State<DeclineServiceScreen> {
                                     horizontal: 15,
                                   ),
                                   child: Text(
-                                    'SUBMIT TO DECLINE',
+                                    'SEND',
                                     style: TextStyle(
                                         color: AppColors.appAlmostWhite),
                                   ),
@@ -201,7 +190,7 @@ class _DeclineServiceScreenState extends State<DeclineServiceScreen> {
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Please enter a valid reason."),
+          content: Text("Please enter a message."),
         ));
       }
     } catch (e) {

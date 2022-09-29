@@ -21,6 +21,9 @@ class Vendor {
   String gst;
   String assignStatus;
   String type;
+  String rating;
+  String ratingOutOf;
+  String ratingCount;
 
   Vendor(
       {required this.userId,
@@ -44,6 +47,9 @@ class Vendor {
       required this.company,
       required this.gst,
       required this.assignStatus,
+      required this.rating,
+      required this.ratingOutOf,
+      required this.ratingCount,
       required this.type});
 
   factory Vendor.fromJson(Map<String, dynamic> responseData) {
@@ -70,6 +76,9 @@ class Vendor {
       gst: responseData['gst'],
       assignStatus: responseData['assign_status'],
       type: responseData['type'],
+      rating: responseData['rat'],
+      ratingOutOf: responseData['rat_outof'].toString(),
+      ratingCount: responseData['rat_count'],
     );
   }
 }

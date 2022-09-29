@@ -1,8 +1,15 @@
+import 'dart:convert';
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
 import 'package:maljal_service_provider/constants/app_colors.dart';
 import 'package:maljal_service_provider/my_widgets/text_field.dart';
 import 'package:maljal_service_provider/utils/my_navigator.dart';
 import 'package:maljal_service_provider/utils/shared_preferences.dart';
+
+import '../constants/app_urls.dart';
+import '../data_models/vendors.dart';
 
 class ProviderScreen extends StatefulWidget {
   const ProviderScreen({Key? key}) : super(key: key);
@@ -19,6 +26,13 @@ class _ProviderScreenState extends State<ProviderScreen> {
   final companyController = TextEditingController();
   final gstController = TextEditingController();
   final addressController = TextEditingController();
+  //final ratingController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance?.addPostFrameCallback((_) => getVendorProfile());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,6 +132,13 @@ class _ProviderScreenState extends State<ProviderScreen> {
                 active: false,
                 myController: gstController,
               ),
+              /* heading('Your Rating'),
+              MyTextField(
+                hint: "Rating",
+                key: null,
+                active: false,
+                myController: ratingController,
+              ), */
               /* heading('Building Name'),
               MyTextField(
                 type: TextInputType.streetAddress,
@@ -170,5 +191,68 @@ class _ProviderScreenState extends State<ProviderScreen> {
         ),
       ),
     );
+  }
+
+  getVendorProfile() async {
+    showLoader();
+    String token = await SharedPreferencesHelper().getToken();
+    final Response response = await get(
+      Uri.parse(AppUrl.vendorProfile),
+      headers: <String, String>{'token': token},
+    );
+
+    log(response.body);
+    Navigator.pop(dialogContext);
+    if (!(jsonDecode(response.body).toString().toLowerCase())
+        .contains('success')) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content:
+            Text(jsonDecode(response.body)['message'].toString().toUpperCase()),
+      ));
+      Navigator.pop(dialogContext);
+    } else {
+      Vendor user = Vendor.fromJson(jsonDecode(response.body)['data']);
+
+      SharedPreferencesHelper sharedPreferences = SharedPreferencesHelper();
+
+      String address = user.building +
+          ", " +
+          user.area +
+          ", " +
+          user.ward +
+          ", " +
+          user.city +
+          ", " +
+          user.pincode +
+          ", ";
+      await sharedPreferences.setVendor(user, address);
+    }
+  }
+
+  late BuildContext dialogContext;
+
+  void showLoader() {
+    showDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (BuildContext context) {
+          dialogContext = context;
+          return WillPopScope(
+              child: Dialog(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: const <Widget>[
+                      CircularProgressIndicator(),
+                      Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 30.0),
+                          child: Text('Please wait...')),
+                    ],
+                  ),
+                ),
+              ),
+              onWillPop: () async => false);
+        });
   }
 }

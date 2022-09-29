@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_share/flutter_share.dart';
 import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:location/location.dart';
@@ -19,6 +19,9 @@ import 'package:maljal_service_provider/utils/network_checkup.dart';
 import 'package:maljal_service_provider/utils/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart' as url_launcher;
 import 'package:background_location/background_location.dart' as bl;
+import 'package:video_player/video_player.dart';
+
+import 'decline_service.dart';
 
 class ServiceDetailsScrceen extends StatefulWidget {
   final MyServices myServices;
@@ -32,14 +35,16 @@ class ServiceDetailsScrceen extends StatefulWidget {
 class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
     with WidgetsBindingObserver {
   late BuildContext buildContext;
-  bool showButtons = true;
-  bool showAccept = true;
+  bool showButtons = false;
+  bool showAccept = false;
   bool showDecline = false;
+  bool showMediaUpload = false;
   bool showFinish = false;
   late TextEditingController happyCodeController = TextEditingController();
   late BuildContext dialogContext;
   late LocationData _locationData;
   Timer? locationTimer;
+  VideoPlayerController? _videoController;
 
   @override
   void initState() {
@@ -54,6 +59,9 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
     happyCodeController.dispose();
     locationTimer?.cancel();
     bl.BackgroundLocation.stopLocationService();
+    if (pickedFile != null && imageVideo == 2) {
+      _videoController!.dispose();
+    }
     super.dispose();
   }
 
@@ -118,8 +126,8 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                   child: SingleChildScrollView(
                     scrollDirection: Axis.vertical,
                     child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: <Widget>[
                           Card(
                             color: Colors.blue.shade50,
@@ -134,100 +142,124 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                               width: 400,
                               child: Padding(
                                 padding: const EdgeInsets.all(15.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    Expanded(
-                                      child: ClipRRect(
-                                        borderRadius:
-                                            BorderRadius.circular(20.0),
-                                        //put image here
-                                        child: getImage(),
-                                      ),
+                                child: Stack(
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: <Widget>[
+                                        Expanded(
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(20.0),
+                                            //put image here
+                                            child: getImage(),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Text(
+                                          'Service Name: ' +
+                                              widget.myServices.servicename,
+                                          style: const TextStyle(
+                                            fontSize: 16.0,
+                                            color: AppColors.appTextDarkBlue,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Service No: ' + widget.myServices.id,
+                                          style: const TextStyle(
+                                            fontSize: 16.0,
+                                            color: AppColors.appTextDarkBlue,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Description: ' +
+                                              widget.myServices.descr,
+                                          style: const TextStyle(
+                                            fontSize: 16.0,
+                                            color: AppColors.appTextDarkBlue,
+                                          ),
+                                        ),
+                                        (!widget.myServices.video
+                                                .endsWith('in/')
+                                            ? getVideo(1)
+                                            : getVideo(2)),
+                                        const Text(
+                                          'Person Details',
+                                          style: TextStyle(
+                                            fontSize: 18.0,
+                                            color: AppColors.appTextDarkBlue,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Name: ' + widget.myServices.username,
+                                          style: const TextStyle(
+                                            fontSize: 16.0,
+                                            color: AppColors.appTextDarkBlue,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Phone: ' + widget.myServices.uphone,
+                                          style: const TextStyle(
+                                            fontSize: 16.0,
+                                            color: AppColors.appTextDarkBlue,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Email: ' + widget.myServices.uemail,
+                                          style: const TextStyle(
+                                            fontSize: 16.0,
+                                            color: AppColors.appTextDarkBlue,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Address: ' +
+                                              widget.myServices.building +
+                                              ', ' +
+                                              widget.myServices.areaname +
+                                              ', ' +
+                                              widget.myServices.city +
+                                              ', ' +
+                                              widget.myServices.pincode,
+                                          style: const TextStyle(
+                                            fontSize: 16.0,
+                                            color: AppColors.appTextDarkBlue,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Landmark: ' +
+                                              widget.myServices.landmark,
+                                          style: const TextStyle(
+                                            fontSize: 16.0,
+                                            color: AppColors.appTextDarkBlue,
+                                          ),
+                                        ),
+                                        Text(
+                                          widget.myServices.addedOn
+                                                  .replaceAll(' ', ' | ') +
+                                              " | " +
+                                              'STATUS:' +
+                                              getStatus(
+                                                  widget.myServices.status),
+                                          style: const TextStyle(
+                                            color: AppColors.appTextDarkBlue,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      'Service Name: ' +
-                                          widget.myServices.servicename,
-                                      style: const TextStyle(
-                                        fontSize: 16.0,
-                                        color: AppColors.appTextDarkBlue,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Service No: ' + widget.myServices.id,
-                                      style: const TextStyle(
-                                        fontSize: 16.0,
-                                        color: AppColors.appTextDarkBlue,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Description: ' + widget.myServices.descr,
-                                      style: const TextStyle(
-                                        fontSize: 16.0,
-                                        color: AppColors.appTextDarkBlue,
-                                      ),
-                                    ),
-                                    (!widget.myServices.video.endsWith('org/')
-                                        ? getVideo(1)
-                                        : getVideo(2)),
-                                    const Text(
-                                      'Person Details',
-                                      style: TextStyle(
-                                        fontSize: 18.0,
-                                        color: AppColors.appTextDarkBlue,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Name: ' + widget.myServices.username,
-                                      style: const TextStyle(
-                                        fontSize: 16.0,
-                                        color: AppColors.appTextDarkBlue,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Phone: ' + widget.myServices.uphone,
-                                      style: const TextStyle(
-                                        fontSize: 16.0,
-                                        color: AppColors.appTextDarkBlue,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Email: ' + widget.myServices.uemail,
-                                      style: const TextStyle(
-                                        fontSize: 16.0,
-                                        color: AppColors.appTextDarkBlue,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Address: ' +
-                                          widget.myServices.building +
-                                          ', ' +
-                                          widget.myServices.areaname +
-                                          ', ' +
-                                          widget.myServices.city +
-                                          ', ' +
-                                          widget.myServices.pincode,
-                                      style: const TextStyle(
-                                        fontSize: 16.0,
-                                        color: AppColors.appTextDarkBlue,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Landmark: ' + widget.myServices.landmark,
-                                      style: const TextStyle(
-                                        fontSize: 16.0,
-                                        color: AppColors.appTextDarkBlue,
-                                      ),
-                                    ),
-                                    Text(
-                                      widget.myServices.addedOn
-                                              .replaceAll(' ', ' | ') +
-                                          " | " +
-                                          'STATUS:' +
-                                          getStatus(widget.myServices.status),
-                                      style: const TextStyle(
-                                        color: AppColors.appTextDarkBlue,
+                                    Positioned(
+                                      right: 0,
+                                      child: CircleAvatar(
+                                        backgroundColor: Colors.amber,
+                                        child: IconButton(
+                                          onPressed: () {
+                                            FlutterShare.share(
+                                                title: 'Service Details',
+                                                text: formatShareText());
+                                          },
+                                          icon: const Icon(Icons.share),
+                                          color: AppColors.appTextDarkBlue,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -262,7 +294,6 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                                                   distanceFilter: 1);
                                           bl.BackgroundLocation
                                               .getLocationUpdates((loc) {
-                                            log(loc.latitude.toString());
                                             _updateLocation(
                                                 loc.latitude, loc.longitude);
                                           });
@@ -366,8 +397,34 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                                   }), */
                                 ),
                           ),
-                          const SizedBox(
-                            height: 10.0,
+                          getPreview(),
+                          Visibility(
+                            visible: showMediaUpload,
+                            child: Center(
+                                child: TextButton(
+                                    style: TextButton.styleFrom(
+                                      backgroundColor: Colors.blue,
+                                    ),
+                                    onPressed: () {
+                                      pickImageVideoDialog();
+                                    },
+                                    child: const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 15,
+                                      ),
+                                      child: Text(
+                                        'UPLOAD PHOTO/VIDEO',
+                                        style: TextStyle(
+                                            color: AppColors.appAlmostWhite),
+                                      ),
+                                    ))
+                                /* child: AppButton(
+                                  title: 'FINISH SERVICE',
+                                  width: 200.0,
+                                  onPressed: () {
+                                    getHappyCode();
+                                  }), */
+                                ),
                           ),
                           Visibility(
                             visible: showFinish,
@@ -400,7 +457,7 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                           const SizedBox(
                             height: 10.0,
                           ),
-                          /* Visibility(
+                          Visibility(
                               visible: showDecline,
                               child: Center(
                                   child: TextButton(
@@ -419,27 +476,58 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                                           horizontal: 10,
                                         ),
                                         child: Text(
-                                          'DECLINE SERVICE',
+                                          'SEND REMARK',
                                           style: TextStyle(
                                               color: AppColors.appAlmostWhite),
                                         ),
-                                      )))
-                              /* child: AppButton(
-                                  title: 'DECLINE SERVICE',
-                                  width: 200.0,
-                                  onPressed: () {
-                                    NavigationHelper().openTempScreen(
-                                        context,
-                                        DeclineServiceScreen(
-                                          id: widget.myServices.id,
-                                        ));
-                                  }), */
-                              ), */
+                                      )))),
                         ]),
                   ),
                 ),
               ),
             )));
+  }
+
+  formatShareText() {
+    return 'Service Details--\nService Name: ' +
+        widget.myServices.servicename +
+        '\n' +
+        'Service No: ' +
+        widget.myServices.id +
+        '\n' +
+        'Description: ' +
+        widget.myServices.descr +
+        '\n\n' +
+        'Personal Details--' +
+        '\n' +
+        'Name: ' +
+        widget.myServices.username +
+        '\n' +
+        'Phone: ' +
+        widget.myServices.uphone +
+        '\n' +
+        'Email: ' +
+        widget.myServices.uemail +
+        '\n' +
+        'Address: ' +
+        widget.myServices.building +
+        ', ' +
+        widget.myServices.areaname +
+        ', ' +
+        widget.myServices.city +
+        ', ' +
+        widget.myServices.pincode +
+        '\n' +
+        'Landmark: ' +
+        widget.myServices.landmark +
+        '\n' +
+        widget.myServices.addedOn
+            .substring(0, widget.myServices.addedOn.indexOf(" ")) +
+        " | " +
+        widget.myServices.addedOn
+            .substring(widget.myServices.addedOn.indexOf(" ")) +
+        " | " +
+        (getStatus(widget.myServices.status));
   }
 
   getVideo(int i) {
@@ -470,7 +558,28 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
 
   String getStatus(String s) {
     String status = '';
-    switch (s) {
+    if (s == '1') {
+      status = 'NEW';
+      showButtons = false;
+      showDecline = false;
+      showAccept = true;
+    } else if (s == '3') {
+      status = 'COMPLETE';
+      showButtons = false;
+      showAccept = false;
+    } else if (s == '5') {
+      status = 'ON-HOLD';
+      showButtons = false;
+      showAccept = false;
+    } else {
+      status = 'ON GOING';
+      showAccept = false;
+      showButtons = true;
+      showDecline = true;
+      showMediaUpload = true;
+      showFinish = true;
+    }
+    /* switch (s) {
       case '1':
         status = 'NEW';
         showButtons = false;
@@ -481,12 +590,25 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
         status = 'ON GOING';
         showAccept = false;
         showButtons = true;
+        showDecline = true;
+        showMediaUpload = true;
         showFinish = true;
-        if (widget.myServices.vendormsg == '') {
-          showDecline = true;
+
+        /* if (widget.myServices.finishMedia.isEmpty) {
+          showMediaUpload = true;
+          showFinish = false;
         } else {
-          showDecline = false;
-        }
+          showMediaUpload = false;
+          showFinish = true;
+        } */
+        break;
+      case '5':
+        status = 'ON-HOLD';
+        showAccept = false;
+        showButtons = true;
+        showDecline = true;
+        showMediaUpload = true;
+        showFinish = true;
         break;
       case '3':
         status = 'COMPLETE';
@@ -494,12 +616,12 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
         showAccept = false;
         break;
       default:
-    }
+    } */
     return status;
   }
 
   getImage() {
-    if (!widget.myServices.image.endsWith('maljal.org/')) {
+    if (!widget.myServices.image.endsWith('org.in/')) {
       return GestureDetector(
           onTap: () {
             showImage(widget.myServices.image);
@@ -523,6 +645,29 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
     }
   }
 
+  _getFileImage(image) {
+    try {
+      return Image.file(
+        image,
+        width: 300,
+        height: 500,
+      );
+    } catch (e) {
+      return const Text('x');
+    }
+  }
+
+  _getFileVideo(image) {
+    _videoController!.play();
+    try {
+      return VideoPlayer(_videoController!);
+    } catch (e) {
+      return const Text('x');
+    }
+  }
+
+  int previewType = 0;
+
   void showImage(image) {
     showDialog(
         barrierDismissible: true,
@@ -533,11 +678,19 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
               child: Dialog(
                 backgroundColor: Colors.transparent,
                 child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: _getImage(image),
-                ),
+                    padding: const EdgeInsets.all(20.0),
+                    child: (previewType == 1)
+                        ? _getImage(image)
+                        : (previewType == 2)
+                            ? _getFileImage(image)
+                            : _getFileVideo(image)),
               ),
-              onWillPop: () async => true);
+              onWillPop: () async {
+                if (previewType == 3) {
+                  _videoController!.pause();
+                }
+                return true;
+              });
         });
   }
 
@@ -582,7 +735,7 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
               "lat": _locationData.latitude.toString(),
               "lng": _locationData.longitude.toString(),
             }));
-        log('accept___' + response.body);
+
         if ((jsonDecode(response.body)['data'] == null)) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('AN ERROR OCCURED'),
@@ -608,7 +761,6 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text("Error!"),
       ));
-      log(e.toString());
     }
   }
 
@@ -722,6 +874,7 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                     height: 300.0,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: <Widget>[
                         const Text(
                           'Enter Happy code:',
@@ -731,25 +884,11 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                           type: TextInputType.number,
                           myController: happyCodeController,
                         ),
-                        Row(
-                          children: [
-                            Text(fileName),
-                            const Text('Pick'),
-                            TextButton(
-                                onPressed: () {
-                                  imageVideo = 1;
-                                  pickFile(setState);
-                                },
-                                child: const Text('Image')),
-                            const Text('or'),
-                            TextButton(
-                                onPressed: () {
-                                  imageVideo = 2;
-                                  pickFile(setState);
-                                },
-                                child: const Text('Video')),
-                          ],
-                        ),
+                        TextButton(
+                            onPressed: () async {
+                              await _requestHappyCode();
+                            },
+                            child: const Text('Resend Happy Code')),
                         AppButton(
                             title: 'SUBMIT',
                             width: 150.0,
@@ -776,6 +915,155 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
         });
   }
 
+  pickImageVideoDialog() {
+    showDialog(
+        barrierDismissible: true,
+        context: buildContext,
+        builder: (BuildContext context) {
+          dialogContext = context;
+          return WillPopScope(
+              child: Dialog(
+                backgroundColor: AppColors.backgroundcolor,
+                child: SizedBox(
+                  height: 200,
+                  child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'Select',
+                              style:
+                                  TextStyle(color: AppColors.appTextDarkBlue),
+                            ),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    imageVideo = 1;
+                                    pickFile();
+                                  },
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: const [
+                                      Icon(
+                                        Icons.image,
+                                        size: 100,
+                                        color: AppColors.appTextDarkBlue,
+                                      ),
+                                      Text('Image')
+                                    ],
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    imageVideo = 2;
+                                    pickFile();
+                                  },
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: const [
+                                      Icon(
+                                        Icons.video_collection_rounded,
+                                        size: 100,
+                                        color: AppColors.appTextDarkBlue,
+                                      ),
+                                      Text('Video')
+                                    ],
+                                  ),
+                                )
+                              ],
+                            )
+                          ])),
+                ),
+              ),
+              onWillPop: () async => true);
+        });
+  }
+
+  getPreview() {
+    if (widget.myServices.finishMedia.isEmpty ||
+        widget.myServices.finishMedia == 'not_empty') {
+      if (imageVideo == 1) {
+        return Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              Image.file(
+                pickedFile!,
+                height: 400,
+                width: MediaQuery.of(context).size.width,
+              ),
+              const SizedBox(
+                height: 20,
+              ),
+              const Text(
+                'Preview',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.appTextDarkBlue),
+              ),
+            ],
+          ),
+        );
+      } else if (imageVideo == 2) {
+        return Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  if (_videoController!.value.isPlaying) {
+                    _videoController!.pause();
+                  } else {
+                    _videoController!.play();
+                  }
+                },
+                child: SizedBox(
+                  height: 400,
+                  width: MediaQuery.of(context).size.width,
+                  child: VideoPlayer(_videoController!),
+                ),
+              ),
+              const SizedBox(
+                height: 20,
+              ),
+              const Text(
+                'Preview',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.appTextDarkBlue),
+              ),
+            ],
+          ),
+        );
+      } else {
+        return Container();
+      }
+    } else {
+      return Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: TextButton(
+            onPressed: () {
+              url_launcher
+                  .launch(AppUrl.appUrl + widget.myServices.finishMedia);
+            },
+            child: const Text('Show Finish Media')),
+      );
+    }
+  }
+
   _requestHappyCode() async {
     String token = await SharedPreferencesHelper().getToken();
     if (token != '') {
@@ -786,7 +1074,6 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
         body: jsonEncode(<String, String>{'booking_id': widget.myServices.id}),
       );
 
-      log('happy code: ' + jsonDecode(response.body).toString());
       if ((jsonDecode(response.body)['data'] == null)) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Wrong Code'),
@@ -807,24 +1094,67 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
   File? pickedFile;
   int imageVideo = -1;
 
+  /* _finishService() async {
+    try {
+      String _code = happyCodeController.text;
+      String token = await SharedPreferencesHelper().getToken();
+
+      if (_code.length >= 4) {
+        showLoader();
+        final Response response = await post(
+          Uri.parse(AppUrl.finish),
+          headers: <String, String>{
+            'token': token,
+          },
+          body: jsonEncode(<String, String>{
+            'happy_code': _code,
+            'id': widget.myServices.id
+          }),
+        );
+        log(response.body);
+        if ((jsonDecode(response.body)['status'] == true)) {
+          NavigationHelper().navigateTo(context, const ServiceFeedsScreen());
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                jsonDecode(response.body)['message'].toString().toUpperCase()),
+          ));
+          Navigator.pop(dialogContext);
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Please enter a valid code."),
+        ));
+      }
+    } catch (e) {
+      Navigator.pop(dialogContext);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("An Error occured."),
+      ));
+    }
+  } */
+
   _finishService() async {
+    showLoader();
+    if (fileName != '') {
+      await _uploadProofImage();
+    }
     String _code = happyCodeController.text;
     if (_code.isNotEmpty) {
       String token = await SharedPreferencesHelper().getToken();
       if (token != '') {
-        showLoader();
         var mRequest = MultipartRequest("POST", Uri.parse(AppUrl.finish));
         mRequest.headers.addAll(<String, String>{"token": token});
 
         mRequest.fields['happy_code'] = _code;
         mRequest.fields['id'] = widget.myServices.id;
-        if (fileName != '') {
+        /* if (fileName != '') {
           mRequest.files.add(MultipartFile(
               'media',
               File(pickedFile!.path.toString()).readAsBytes().asStream(),
               File(pickedFile!.path.toString()).lengthSync(),
               filename: pickedFile!.path.toString().split("/").last));
-        }
+        } */
 
         var response = await mRequest.send();
 
@@ -851,7 +1181,7 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
     }
   }
 
-  pickFile(v) async {
+  pickFile() async {
     final ImagePicker _picker = ImagePicker();
     XFile? file;
 
@@ -862,17 +1192,53 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
     }
 
     if (file != null) {
-      v(() {
+      setState(() {
         pickedFile = File(file!.path);
-        log(file.name);
+
         if (file.name.length > 10) {
           fileName = file.name.substring(0, 10);
         } else {
           fileName = file.name;
         }
+        if (imageVideo == 2) {
+          _videoController = VideoPlayerController.file(pickedFile!)
+            ..initialize();
+        }
       });
     } else {
       // User canceled the picker
+    }
+  }
+
+  _uploadProofImage() async {
+    String token = await SharedPreferencesHelper().getToken();
+    if (token != '') {
+      var mRequest = MultipartRequest("POST", Uri.parse(AppUrl.proof));
+      mRequest.headers.addAll(<String, String>{"token": token});
+
+      mRequest.fields['id'] = widget.myServices.id;
+      if (fileName != '') {
+        mRequest.files.add(MultipartFile(
+            'media',
+            File(pickedFile!.path.toString()).readAsBytes().asStream(),
+            File(pickedFile!.path.toString()).lengthSync(),
+            filename: pickedFile!.path.toString().split("/").last));
+      }
+
+      var response = await mRequest.send();
+
+      if (response.statusCode == 200) {
+        return;
+      } else {
+        Navigator.pop(dialogContext);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Error'),
+        ));
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("An Error Occured."),
+      ));
     }
   }
 
@@ -942,15 +1308,12 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
             }),
           );
 
-          log(response.body);
           if ((jsonDecode(response.body)['data'] == null)) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
               content: Text('AN ERROR OCCURED'),
             ));
             Navigator.pop(dialogContext);
-          } else {
-            log(response.body);
-          }
+          } else {}
         } else {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text("An Error Occured."),

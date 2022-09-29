@@ -4,12 +4,15 @@ class AppUrl {
 
   static String sendOtp = baseUrl + 'authentication/login';
   static String verifyOtp = baseUrl + 'authentication/verify';
+  static String vendorProfile =
+      'https://upaay.org.in/vendorapi/booking/profile';
 
   static String newRequests = baseUrl + 'booking/new';
   static String pendingRequests = baseUrl + 'booking/processing';
   static String completedRequests = baseUrl + 'booking/finished';
 
   static String accept = baseUrl + 'booking/process';
+  static String proof = baseUrl + 'booking/proof';
   static String finish = baseUrl + 'booking/finish';
 
   static String updateLocation =

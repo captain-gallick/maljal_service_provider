@@ -1,12 +1,10 @@
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:maljal_service_provider/constants/app_colors.dart';
 import 'package:maljal_service_provider/constants/app_urls.dart';
 import 'package:maljal_service_provider/data_models/my_services.dart';
@@ -17,8 +15,7 @@ import 'package:maljal_service_provider/utils/network_checkup.dart';
 import 'package:maljal_service_provider/utils/shared_preferences.dart';
 import 'package:skeletons/skeletons.dart';
 
-import '../my_widgets/app_button.dart';
-import '../my_widgets/text_field.dart';
+import '../data_models/vendors.dart';
 import 'profile_screen.dart';
 import 'splash_screen.dart';
 
@@ -38,21 +35,17 @@ class _ServiceFeedsScreenState extends State<ServiceFeedsScreen>
   bool showList = false;
   int currentIndex = 0;
   late BuildContext dialogContext;
+  late BuildContext buildContext;
   int pageno = 0;
 
   @override
   void initState() {
     super.initState();
-    //_scrollController = ScrollController();
-    /* _scrollController.addListener(() {
-      _scrollListener();
-    }); */
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       _setTab();
     });
-    WidgetsBinding.instance
-        ?.addPostFrameCallback((_) => getServiceFeed(pageno));
+    WidgetsBinding.instance?.addPostFrameCallback((_) => getRating());
   }
 
   @override
@@ -73,7 +66,12 @@ class _ServiceFeedsScreenState extends State<ServiceFeedsScreen>
         },
         child: Scaffold(
           key: _scaffoldKey,
-          drawer: Drawer(child: getDrawer()),
+          drawer: Drawer(
+              child: (user == null)
+                  ? Container(
+                      width: MediaQuery.of(context).size.width * 0.85,
+                    )
+                  : getDrawer()),
           appBar: AppBar(
             centerTitle: true,
             elevation: 0,
@@ -165,6 +163,62 @@ class _ServiceFeedsScreenState extends State<ServiceFeedsScreen>
                     ],
                   ),
                 ),
+                Visibility(
+                  visible:
+                      (pageno == 0 && myServices.length == 10) || (pageno != 0),
+                  child: Column(
+                    children: [
+                      Container(
+                        height: 0.5,
+                        width: MediaQuery.of(context).size.width,
+                        color: Colors.grey,
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Visibility(
+                            visible: (pageno > 0),
+                            maintainSize: true,
+                            maintainAnimation: true,
+                            maintainState: true,
+                            child: TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  showList = !showList;
+                                  pageno--;
+                                  getServiceFeed(pageno);
+                                });
+                              },
+                              child: const Text(
+                                'Prev',
+                              ),
+                            ),
+                          ),
+                          const Text(
+                            '|',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                          Visibility(
+                              visible: (myServices.length > 9),
+                              maintainSize: true,
+                              maintainAnimation: true,
+                              maintainState: true,
+                              child: TextButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      showList = !showList;
+                                      pageno++;
+                                      getServiceFeed(pageno);
+                                    });
+                                  },
+                                  child: const Text(
+                                    'Next',
+                                  ))),
+                        ],
+                      )
+                    ],
+                  ),
+                )
               ],
             ),
           ),
@@ -211,111 +265,103 @@ class _ServiceFeedsScreenState extends State<ServiceFeedsScreen>
   }
 
   createListUI() {
-    return ListView.builder(
-      scrollDirection: Axis.vertical,
-      shrinkWrap: true,
-      itemCount: myServices.length,
-      //controller: _scrollController,
-      itemBuilder: (context, position) {
-        return GestureDetector(
-            onTap: () {
-              NavigationHelper().openTempScreen(context,
-                  ServiceDetailsScrceen(myServices: myServices[position]));
-            },
-            child: Card(
-              shape: RoundedRectangleBorder(
-                side: const BorderSide(
-                    color: Color.fromARGB(255, 235, 235, 235), width: 2),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              elevation: 5,
-              color: AppColors.appLightBlue,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: ListTile(
-                  leading: (position.isEven
-                      ? Image.asset('assets/images/user_green.png')
-                      : Image.asset('assets/images/user_blue.png')),
-                  title: Text(
-                    myServices[position].username,
-                    style: const TextStyle(fontSize: 22.0),
-                  ),
-                  subtitle: RichText(
-                      text: TextSpan(
-                          text: myServices[position]
-                                  .addedOn
-                                  .replaceAll(' ', ' | ') +
-                              " | " +
-                              'STATUS: ',
-                          style:
-                              const TextStyle(color: AppColors.appTextDarkBlue),
-                          children: <TextSpan>[
-                        TextSpan(
-                            text: getStatus(myServices[position].status,
-                                myServices[position].vendormsg),
-                            style: (myServices[position].status == '2' &&
-                                    myServices[position].vendormsg != '')
-                                ? const TextStyle(color: Colors.red)
-                                : const TextStyle(color: Colors.grey)),
-                      ])),
+    if (myServices.isNotEmpty) {
+      return ListView.builder(
+        scrollDirection: Axis.vertical,
+        shrinkWrap: true,
+        itemCount: myServices.length,
+        //controller: _scrollController,
+        itemBuilder: (context, position) {
+          return GestureDetector(
+              onTap: () {
+                NavigationHelper().openTempScreen(context,
+                    ServiceDetailsScrceen(myServices: myServices[position]));
+              },
+              child: Card(
+                shape: RoundedRectangleBorder(
+                  side: const BorderSide(
+                      color: Color.fromARGB(255, 235, 235, 235), width: 2),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                elevation: 5,
+                color: AppColors.appLightBlue,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: ListTile(
+                    leading: (position.isEven
+                        ? Image.asset('assets/images/user_green.png')
+                        : Image.asset('assets/images/user_blue.png')),
+                    title: Text(
+                      myServices[position].username,
+                      style: const TextStyle(fontSize: 22.0),
+                    ),
+                    subtitle: RichText(
+                        text: TextSpan(
+                            text: myServices[position]
+                                    .addedOn
+                                    .replaceAll(' ', ' | ') +
+                                " | " +
+                                'STATUS: ',
+                            style: const TextStyle(
+                                color: AppColors.appTextDarkBlue),
+                            children: <TextSpan>[
+                          TextSpan(
+                            text: getStatus(myServices[position].status),
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ])),
 
-                  /* Text(
+                    /* Text(
                       myServices[position].addedOn.replaceAll(' ', ' | ') +
                           " | " +
                           'STATUS:' +
                           getStatus(myServices[position].status,
                               myServices[position].vendormsg)), */
-                  trailing: ClipRRect(
-                    child: SizedBox(
-                        height: 70.0,
-                        width: 70.0,
-                        child: (myServices[position].image.endsWith('org/'))
-                            ? Container()
-                            : _getImage(myServices[position].image)),
+                    trailing: ClipRRect(
+                      child: SizedBox(
+                          height: 70.0,
+                          width: 70.0,
+                          child: (myServices[position].image.endsWith('in/'))
+                              ? Container()
+                              : _getImage(myServices[position].image)),
+                    ),
                   ),
                 ),
-              ),
-            ));
-      },
-    );
+              ));
+        },
+      );
+    } else {
+      return const Center(child: Text("Nothing to show."));
+    }
   }
 
   _getImage(String image) {
     try {
       return Image.network(image);
-    } catch (e) {
-      log(e.toString());
-    }
+    } catch (e) {}
   }
 
   _setTab() {
     if (!_tabController.indexIsChanging) {
       setState(() {
-        pageno = 0;
         showList = !showList;
         currentIndex = _tabController.index;
+        pageno = 0;
         getServiceFeed(pageno);
       });
     }
   }
 
-  String getStatus(String s, String vendorM) {
+  String getStatus(String s) {
     String status = '';
-    switch (s) {
-      case '1':
-        status = 'NEW';
-        break;
-      case '2':
-        if (vendorM != '') {
-          status = 'DECLINED';
-        } else {
-          status = 'ON GOING';
-        }
-        break;
-      case '3':
-        status = 'COMPLETE';
-        break;
-      default:
+    if (s == '1') {
+      status = 'NEW';
+    } else if (s == '3') {
+      status = 'COMPLETE';
+    } else if (s == '5') {
+      status = 'ON-HOLD';
+    } else {
+      status = 'ON GOING';
     }
     return status;
   }
@@ -337,33 +383,65 @@ class _ServiceFeedsScreenState extends State<ServiceFeedsScreen>
     return url;
   }
 
-  getServiceFeed(int pageno) async {
+  Vendor? user;
+
+  getRating() async {
+    String token = await SharedPreferencesHelper().getToken();
+    final Response response = await get(
+      Uri.parse(AppUrl.vendorProfile),
+      headers: <String, String>{'token': token},
+    );
+    if (!(jsonDecode(response.body).toString().toLowerCase())
+        .contains('success')) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content:
+            Text(jsonDecode(response.body)['message'].toString().toUpperCase()),
+      ));
+    } else {
+      user = Vendor.fromJson(jsonDecode(response.body)['data']);
+
+      SharedPreferencesHelper sharedPreferences = SharedPreferencesHelper();
+
+      String address = user!.building +
+          ", " +
+          user!.area +
+          ", " +
+          user!.ward +
+          ", " +
+          user!.city +
+          ", " +
+          user!.pincode +
+          ", ";
+      await sharedPreferences.setVendor(user!, address);
+      getServiceFeed(pageno);
+    }
+  }
+
+  getServiceFeed(int pageNo) async {
     NetworkCheckUp().checkConnection().then((value) async {
       if (value) {
         //showLoader();
         try {
-          if (pageno == 0) myServices = [];
+          myServices.clear();
+          String page = pageno.toString();
           String token = await SharedPreferencesHelper().getToken();
           //print(token);
           final Response response = await get(
-              Uri.parse(getUrl(currentIndex) +
-                  '?pageno=' +
-                  pageno.toString() +
-                  '&pagesize=10'),
+              Uri.parse(
+                  getUrl(currentIndex) + '?pageno=' + page + '&pagesize=10'),
               headers: <String, String>{'token': token});
 
-          log(response.body);
-          log(token);
-          if ((jsonDecode(response.body)['data'] == null)) {
+          if ((jsonDecode(response.body)['data'] != null)) {
+            List<dynamic> list = jsonDecode(response.body)['data'];
+            for (int i = 0; i < list.length; i++) {
+              myServices.add(MyServices.fromJson(list[i]));
+            }
             setState(() {
               showList = !showList;
               //Navigator.pop(dialogContext);
             });
           } else {
-            List<dynamic> list = jsonDecode(response.body)['data'];
-            for (int i = 0; i < list.length; i++) {
-              myServices.add(MyServices.fromJson(list[i]));
-            }
+            myServices.clear;
             setState(() {
               showList = !showList;
               //Navigator.pop(dialogContext);
@@ -408,6 +486,15 @@ class _ServiceFeedsScreenState extends State<ServiceFeedsScreen>
                   NavigationHelper()
                       .openTempScreen(context, const ProviderScreen());
                 },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              child: ListTile(
+                title: const Text("YOUR RATINGS",
+                    style: TextStyle(
+                        fontSize: 20.0, color: AppColors.appTextDarkBlue)),
+                subtitle: getRatingLayout(),
               ),
             ),
             Padding(
@@ -465,6 +552,34 @@ class _ServiceFeedsScreenState extends State<ServiceFeedsScreen>
               ),
               onWillPop: () async => false);
         });
+  }
+
+  getRatingLayout() {
+    int rating = double.parse(user!.rating).toInt();
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        for (int i = 0; i < rating; i++)
+          const Icon(
+            Icons.star_rate_rounded,
+            color: Colors.amber,
+            size: 16,
+          ),
+        const SizedBox(
+          width: 10,
+        ),
+        Text(
+          '(' +
+              user!.rating.toString() +
+              '/' +
+              user!.ratingOutOf +
+              ' ,' +
+              user!.ratingCount +
+              ' Reviews)',
+          style: const TextStyle(color: AppColors.appTextDarkBlue),
+        )
+      ],
+    );
   }
 
   /* _scrollListener() {
