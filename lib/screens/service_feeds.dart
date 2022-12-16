@@ -386,34 +386,39 @@ class _ServiceFeedsScreenState extends State<ServiceFeedsScreen>
   Vendor? user;
 
   getRating() async {
-    String token = await SharedPreferencesHelper().getToken();
-    final Response response = await get(
-      Uri.parse(AppUrl.vendorProfile),
-      headers: <String, String>{'token': token},
-    );
-    if (!(jsonDecode(response.body).toString().toLowerCase())
-        .contains('success')) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content:
-            Text(jsonDecode(response.body)['message'].toString().toUpperCase()),
-      ));
-    } else {
-      user = Vendor.fromJson(jsonDecode(response.body)['data']);
+    try {
+      String token = await SharedPreferencesHelper().getToken();
+      final Response response = await get(
+        Uri.parse(AppUrl.vendorProfile),
+        headers: <String, String>{'token': token},
+      );
+      log(response.body);
+      if (!(jsonDecode(response.body).toString().toLowerCase())
+          .contains('success')) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+              jsonDecode(response.body)['message'].toString().toUpperCase()),
+        ));
+      } else {
+        user = Vendor.fromJson(jsonDecode(response.body)['data']);
 
-      SharedPreferencesHelper sharedPreferences = SharedPreferencesHelper();
+        SharedPreferencesHelper sharedPreferences = SharedPreferencesHelper();
 
-      String address = user!.building +
-          ", " +
-          user!.area +
-          ", " +
-          user!.ward +
-          ", " +
-          user!.city +
-          ", " +
-          user!.pincode +
-          ", ";
-      await sharedPreferences.setVendor(user!, address);
-      getServiceFeed(pageno);
+        String address = user!.building +
+            ", " +
+            user!.area +
+            ", " +
+            user!.ward +
+            ", " +
+            user!.city +
+            ", " +
+            user!.pincode +
+            ", ";
+        await sharedPreferences.setVendor(user!, address);
+        getServiceFeed(pageno);
+      }
+    } catch (e) {
+      log(e.toString());
     }
   }
 

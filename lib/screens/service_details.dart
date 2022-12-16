@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -138,7 +139,6 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20.0)),
                             child: SizedBox(
-                              height: 450,
                               width: 400,
                               child: Padding(
                                 padding: const EdgeInsets.all(15.0),
@@ -148,13 +148,11 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: <Widget>[
-                                        Expanded(
-                                          child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(20.0),
-                                            //put image here
-                                            child: getImage(),
-                                          ),
+                                        ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(20.0),
+                                          //put image here
+                                          child: getImage(),
                                         ),
                                         const SizedBox(height: 10),
                                         Text(
@@ -274,65 +272,73 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceEvenly,
                                   children: <Widget>[
-                                    TextButton(
-                                        style: TextButton.styleFrom(
+                                    Flexible(
+                                      flex: 1,
+                                      child: TextButton(
+                                          style: TextButton.styleFrom(
+                                              backgroundColor:
+                                                  AppColors.lightTextColor),
+                                          onPressed: () async {
+                                            await bl.BackgroundLocation
+                                                .setAndroidNotification(
+                                              title:
+                                                  'Your location is being shared',
+                                              message:
+                                                  'Your location is being shared',
+                                              icon: 'assets/icon/icon.png',
+                                            );
+                                            await bl.BackgroundLocation
+                                                .setAndroidConfiguration(1000);
+                                            await bl.BackgroundLocation
+                                                .startLocationService(
+                                                    distanceFilter: 1);
+                                            bl.BackgroundLocation
+                                                .getLocationUpdates((loc) {
+                                              _updateLocation(
+                                                  loc.latitude, loc.longitude);
+                                            });
+                                            MapUtils.openMap(
+                                                double.parse(
+                                                    widget.myServices.lat),
+                                                double.parse(
+                                                    widget.myServices.lng));
+                                            //_shareLocationDialog();
+                                          },
+                                          child: const Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 15),
+                                            child: Text(
+                                              'ENROUTE',
+                                              style: TextStyle(
+                                                  color:
+                                                      AppColors.appAlmostWhite,
+                                                  fontSize: 16.0),
+                                            ),
+                                          )),
+                                    ),
+                                    Flexible(
+                                      flex: 1,
+                                      child: TextButton(
+                                          style: TextButton.styleFrom(
                                             backgroundColor:
-                                                AppColors.lightTextColor),
-                                        onPressed: () async {
-                                          await bl.BackgroundLocation
-                                              .setAndroidNotification(
-                                            title:
-                                                'Your location is being shared',
-                                            message:
-                                                'Your location is being shared',
-                                            icon: 'assets/icon/icon.png',
-                                          );
-                                          await bl.BackgroundLocation
-                                              .setAndroidConfiguration(1000);
-                                          await bl.BackgroundLocation
-                                              .startLocationService(
-                                                  distanceFilter: 1);
-                                          bl.BackgroundLocation
-                                              .getLocationUpdates((loc) {
-                                            _updateLocation(
-                                                loc.latitude, loc.longitude);
-                                          });
-                                          MapUtils.openMap(
-                                              double.parse(
-                                                  widget.myServices.lat),
-                                              double.parse(
-                                                  widget.myServices.lng));
-                                          //_shareLocationDialog();
-                                        },
-                                        child: const Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              horizontal: 15),
-                                          child: Text(
-                                            'ENROUTE',
-                                            style: TextStyle(
-                                                color: AppColors.appAlmostWhite,
-                                                fontSize: 16.0),
+                                                AppColors.lightTextColor,
                                           ),
-                                        )),
-                                    TextButton(
-                                        style: TextButton.styleFrom(
-                                          backgroundColor:
-                                              AppColors.lightTextColor,
-                                        ),
-                                        onPressed: () {
-                                          url_launcher.launch("tel://" +
-                                              widget.myServices.uphone);
-                                        },
-                                        child: const Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              horizontal: 15),
-                                          child: Text(
-                                            'CALL USER',
-                                            style: TextStyle(
-                                                color: AppColors.appAlmostWhite,
-                                                fontSize: 16.0),
-                                          ),
-                                        )),
+                                          onPressed: () {
+                                            url_launcher.launch("tel://" +
+                                                widget.myServices.uphone);
+                                          },
+                                          child: const Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 15),
+                                            child: Text(
+                                              'CALL USER',
+                                              style: TextStyle(
+                                                  color:
+                                                      AppColors.appAlmostWhite,
+                                                  fontSize: 16.0),
+                                            ),
+                                          )),
+                                    ),
                                   ]),
                             ),
                           ),
@@ -633,13 +639,14 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                 child: _getImage(widget.myServices.image),
               )));
     } else {
-      return const Center(child: Text('No Image Available'));
+      return const SizedBox(
+          height: 150, child: Center(child: Text('No Image Available')));
     }
   }
 
   _getImage(String image) {
     try {
-      return Image.network(image, fit: BoxFit.cover);
+      return Image.network(image, height: 150, fit: BoxFit.cover);
     } catch (e) {
       return const Text('x');
     }
@@ -679,11 +686,13 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                 backgroundColor: Colors.transparent,
                 child: Padding(
                     padding: const EdgeInsets.all(20.0),
-                    child: (previewType == 1)
+                    child: _getImage(
+                        image) /* (previewType == 1)
                         ? _getImage(image)
                         : (previewType == 2)
                             ? _getFileImage(image)
-                            : _getFileVideo(image)),
+                            : _getFileVideo(image) */
+                    ),
               ),
               onWillPop: () async {
                 if (previewType == 3) {
@@ -858,7 +867,7 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
   } */
 
   void getHappyCode() async {
-    await _requestHappyCode();
+    //await _requestHappyCode();
     showDialog(
         barrierDismissible: true,
         context: buildContext,
@@ -884,11 +893,11 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
                           type: TextInputType.number,
                           myController: happyCodeController,
                         ),
-                        TextButton(
+                        /* TextButton(
                             onPressed: () async {
                               await _requestHappyCode();
                             },
-                            child: const Text('Resend Happy Code')),
+                            child: const Text('Resend Happy Code')), */
                         AppButton(
                             title: 'SUBMIT',
                             width: 150.0,
@@ -925,7 +934,7 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
               child: Dialog(
                 backgroundColor: AppColors.backgroundcolor,
                 child: SizedBox(
-                  height: 200,
+                  height: 250,
                   child: Padding(
                       padding: const EdgeInsets.all(20.0),
                       child: Column(
@@ -1080,6 +1089,7 @@ class _ServiceDetailsScrceenState extends State<ServiceDetailsScrceen>
         ));
         Navigator.pop(dialogContext);
       } else {
+        log(response.body);
         Navigator.pop(dialogContext);
         //showLoader(2);
       }

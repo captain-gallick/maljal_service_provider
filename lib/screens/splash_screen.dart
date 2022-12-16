@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:in_app_update/in_app_update.dart';
 import 'package:maljal_service_provider/screens/login_screen.dart';
 import 'package:maljal_service_provider/screens/service_feeds.dart';
 import 'package:maljal_service_provider/screens/welcome_screen.dart';
@@ -15,10 +16,28 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  AppUpdateInfo? _updateInfo;
+
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 3), () {
+    checkForUpdate();
+    _updateInfo?.updateAvailability == UpdateAvailability.updateAvailable
+        ? () {
+            InAppUpdate.performImmediateUpdate().catchError((e) => checkPath());
+          }
+        : Timer(const Duration(seconds: 3), () {
+            checkPath();
+          });
+  }
+
+  // Platform messages are asynchronous, so we initialize in an async method.
+  Future<void> checkForUpdate() async {
+    InAppUpdate.checkForUpdate().then((info) {
+      setState(() {
+        _updateInfo = info;
+      });
+    }).catchError((e) {
       checkPath();
     });
   }

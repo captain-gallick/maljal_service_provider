@@ -332,41 +332,46 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (_otp.length == 6) {
       showLoader();
-      final Response response = await post(
-        Uri.parse(AppUrl.verifyOtp),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, String>{'phone': _phone, 'otp': _otp}),
-      );
+      try {
+        final Response response = await post(
+          Uri.parse(AppUrl.verifyOtp),
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+          body: jsonEncode(<String, String>{'phone': _phone, 'otp': _otp}),
+        );
 
-      log(response.body);
-      if (!(jsonDecode(response.body).toString().toLowerCase())
-          .contains('success')) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              jsonDecode(response.body)['message'].toString().toUpperCase()),
-        ));
-        Navigator.pop(dialogContext);
-      } else {
-        timer.cancel();
-        Vendor user = Vendor.fromJson(jsonDecode(response.body)['data']);
+        log(response.body);
 
-        SharedPreferencesHelper sharedPreferences = SharedPreferencesHelper();
+        if (!(jsonDecode(response.body).toString().toLowerCase())
+            .contains('success')) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                jsonDecode(response.body)['message'].toString().toUpperCase()),
+          ));
+          Navigator.pop(dialogContext);
+        } else {
+          timer.cancel();
+          Vendor user = Vendor.fromJson(jsonDecode(response.body)['data']);
 
-        await sharedPreferences.setToken(user.token);
-        String address = user.building +
-            ", " +
-            user.area +
-            ", " +
-            user.ward +
-            ", " +
-            user.city +
-            ", " +
-            user.pincode +
-            ", ";
-        await sharedPreferences.setVendor(user, address);
-        NavigationHelper().navigateTo(context, const ServiceFeedsScreen());
+          SharedPreferencesHelper sharedPreferences = SharedPreferencesHelper();
+
+          await sharedPreferences.setToken(user.token);
+          String address = user.building +
+              ", " +
+              user.area +
+              ", " +
+              user.ward +
+              ", " +
+              user.city +
+              ", " +
+              user.pincode +
+              ", ";
+          await sharedPreferences.setVendor(user, address);
+          NavigationHelper().navigateTo(context, const ServiceFeedsScreen());
+        }
+      } catch (e) {
+        log(e.toString());
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
